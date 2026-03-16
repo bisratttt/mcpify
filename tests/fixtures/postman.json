@@ -1,0 +1,56 @@
+{
+  "info": {
+    "name": "Petstore API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Pets",
+      "item": [
+        {
+          "name": "List Pets",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "https://api.example.com/pets?limit=10",
+              "host": ["api", "example", "com"],
+              "path": ["pets"],
+              "query": [
+                { "key": "limit", "value": "10", "description": "Max results" }
+              ]
+            },
+            "header": [
+              { "key": "X-API-Key", "value": "{{API_KEY}}", "description": "API key" }
+            ],
+            "description": "Returns all pets"
+          }
+        },
+        {
+          "name": "Create Pet",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "https://api.example.com/pets",
+              "host": ["api", "example", "com"],
+              "path": ["pets"]
+            },
+            "body": { "mode": "raw", "raw": "{\"name\": \"Fido\"}" },
+            "description": "Create a new pet"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Pet by ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "https://api.example.com/pets/:id",
+          "host": ["api", "example", "com"],
+          "path": ["pets", ":id"],
+          "variable": [{ "key": "id", "value": "123", "description": "Pet ID" }]
+        }
+      }
+    }
+  ]
+}

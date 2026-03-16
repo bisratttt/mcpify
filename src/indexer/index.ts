@@ -18,9 +18,10 @@ function float32ToBuffer(arr: number[]): Buffer {
   return buf;
 }
 
-function bufferToFloat32(buf: Buffer): number[] {
+function bufferToFloat32(raw: Uint8Array): number[] {
+  const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
   const arr: number[] = [];
-  for (let i = 0; i < buf.length; i += 4) arr.push(buf.readFloatLE(i));
+  for (let i = 0; i < raw.byteLength; i += 4) arr.push(view.getFloat32(i, true));
   return arr;
 }
 
@@ -79,7 +80,7 @@ export class ApiIndexer {
   search(queryEmbedding: number[], limit = 5): Endpoint[] {
     const rows = this.db.prepare(`
       SELECT endpoint_json, embedding FROM endpoints WHERE embedding IS NOT NULL
-    `).all() as { endpoint_json: string; embedding: Buffer }[];
+    `).all() as { endpoint_json: string; embedding: Uint8Array }[];
 
     const scored = rows.map(r => ({
       endpoint: JSON.parse(r.endpoint_json) as Endpoint,

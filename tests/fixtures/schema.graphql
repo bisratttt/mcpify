@@ -1,0 +1,24 @@
+type Query {
+  """Get a user by ID"""
+  user(id: ID!): User
+  """List all users"""
+  users(limit: Int, offset: Int): [User!]!
+}
+
+type Mutation {
+  """Create a new user"""
+  createUser(name: String!, email: String!): User!
+  """Delete a user"""
+  deleteUser(id: ID!): Boolean!
+}
+
+type Subscription {
+  """Subscribe to user updates"""
+  userUpdated(id: ID!): User!
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+}

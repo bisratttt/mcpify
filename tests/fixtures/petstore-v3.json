@@ -1,0 +1,62 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Petstore", "version": "1.0.0", "description": "A sample pet store" },
+  "servers": [{ "url": "https://petstore.example.com/v1" }],
+  "components": {
+    "securitySchemes": {
+      "apiKey": { "type": "apiKey", "name": "X-API-Key", "in": "header" },
+      "bearerAuth": { "type": "http", "scheme": "bearer" }
+    }
+  },
+  "paths": {
+    "/pets": {
+      "get": {
+        "operationId": "listPets",
+        "summary": "List all pets",
+        "tags": ["pets"],
+        "security": [{ "apiKey": [] }],
+        "parameters": [
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["available", "sold"] } }
+        ],
+        "responses": { "200": { "description": "A list of pets" }, "400": { "description": "Bad request" } }
+      },
+      "post": {
+        "operationId": "createPet",
+        "summary": "Create a pet",
+        "tags": ["pets"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "name": { "type": "string" }, "tag": { "type": "string" } } }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/pets/{petId}": {
+      "get": {
+        "operationId": "getPet",
+        "summary": "Get a pet by ID",
+        "tags": ["pets"],
+        "parameters": [
+          { "name": "petId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "A pet" }, "404": { "description": "Not found" } }
+      },
+      "delete": {
+        "operationId": "deletePet",
+        "summary": "Delete a pet",
+        "tags": ["pets"],
+        "deprecated": true,
+        "parameters": [
+          { "name": "petId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    }
+  }
+}
