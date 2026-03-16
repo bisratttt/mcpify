@@ -1,10 +1,18 @@
-import { mkdirSync, writeFileSync, cpSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import type { NormalizedSpec, GenerateOptions, EmbedConfig } from '../types.js';
+import type { NormalizedSpec, GenerateOptions, EmbedConfig, EmbeddingProvider } from '../types.js';
 import { ApiIndexer } from '../indexer/index.js';
-import { endpointToTool } from './tools.js';
-import { extractRequiredEnvVars, buildAuthHeaders, buildAuthQueryParams, buildDotEnvExample } from './auth.js';
+import { QWEN3_MODEL } from '../indexer/embed.js';
+import { extractRequiredEnvVars, buildDotEnvExample } from './auth.js';
 import { generateServerTs, generatePackageJson, generateTsConfig } from './server-template.js';
+
+function defaultModel(provider: EmbeddingProvider): string {
+  switch (provider) {
+    case 'openai': return 'text-embedding-3-small';
+    case 'ollama': return 'nomic-embed-text';
+    case 'local':  return QWEN3_MODEL;
+  }
+}
 
 export interface GenerateResult {
   outputDir: string;
@@ -16,60 +24,35 @@ export async function generateMcpServer(
   spec: NormalizedSpec,
   options: GenerateOptions,
 ): Promise<GenerateResult> {
-  const provider = options.embeddingProvider ?? 'openai';
-  const model = options.embeddingModel ?? (provider === 'openai' ? 'text-embedding-3-small' : 'nomic-embed-text');
-  const baseUrl = options.baseUrl ?? spec.servers[0]?.url ?? 'https://api.example.com';
+  const provider = options.embeddingProvider ?? 'local';
+  const model = options.embeddingModel ?? defaultModel(provider);
   const name = options.name ?? spec.info.title;
+
+  // Override base URL if provided
+  const specWithBaseUrl: NormalizedSpec = options.baseUrl
+    ? { ...spec, servers: [{ url: options.baseUrl }, ...spec.servers] }
+    : spec;
 
   const embedConfig: EmbedConfig = { provider, model };
 
-  // Create output structure
   const outDir = options.outputDir;
-  const srcDir = join(outDir, 'src');
-  const dbDir = join(outDir, 'db');
+  mkdirSync(join(outDir, 'src'), { recursive: true });
+  mkdirSync(join(outDir, 'db'), { recursive: true });
 
-  mkdirSync(srcDir, { recursive: true });
-  mkdirSync(dbDir, { recursive: true });
-
-  // Index endpoints into SQLite
-  const dbPath = join(dbDir, 'api.sqlite');
-  const indexer = new ApiIndexer(dbPath);
-  await indexer.indexSpec(spec, embedConfig);
+  // Index all endpoints into SQLite with embeddings
+  const indexer = new ApiIndexer(join(outDir, 'db', 'api.sqlite'));
+  await indexer.indexSpec(specWithBaseUrl, embedConfig);
   indexer.close();
 
-  // Generate auth info
-  const authHeaders = buildAuthHeaders(spec.auth);
-  const authQueryParams = buildAuthQueryParams(spec.auth);
   const envVars = extractRequiredEnvVars(spec.auth, spec.endpoints);
 
-  // Generate tools
-  const tools = spec.endpoints.map(ep =>
-    endpointToTool(ep, baseUrl, authHeaders, authQueryParams)
-  );
-
-  // Write server.ts
-  const serverTs = generateServerTs(spec, tools, spec.auth, provider, model);
-  writeFileSync(join(srcDir, 'server.ts'), serverTs);
-
-  // Write package.json
-  const pkgJson = generatePackageJson(name, spec.info.version, provider);
-  writeFileSync(join(outDir, 'package.json'), pkgJson);
-
-  // Write tsconfig.json
+  writeFileSync(join(outDir, 'src', 'server.ts'), generateServerTs(specWithBaseUrl, spec.auth, provider, model));
+  writeFileSync(join(outDir, 'package.json'), generatePackageJson(name, spec.info.version, provider));
   writeFileSync(join(outDir, 'tsconfig.json'), generateTsConfig());
+  writeFileSync(join(outDir, '.env.example'), buildDotEnvExample(envVars));
+  writeFileSync(join(outDir, 'README.md'), generateReadme(specWithBaseUrl, envVars, provider));
 
-  // Write .env.example
-  const dotEnv = buildDotEnvExample(envVars);
-  writeFileSync(join(outDir, '.env.example'), dotEnv);
-
-  // Write README
-  writeFileSync(join(outDir, 'README.md'), generateReadme(spec, envVars, provider));
-
-  return {
-    outputDir: outDir,
-    endpointsIndexed: spec.endpoints.length,
-    envVars,
-  };
+  return { outputDir: outDir, endpointsIndexed: spec.endpoints.length, envVars };
 }
 
 function generateReadme(
@@ -83,7 +66,7 @@ function generateReadme(
 
   const providerNote = provider === 'openai'
     ? '- `OPENAI_API_KEY` — required for the `search_api_docs` tool'
-    : `- Configure \`OLLAMA_HOST\` if Ollama is not on localhost`;
+    : '- Configure `OLLAMA_HOST` if Ollama is not on localhost';
 
   return `# ${spec.info.title} MCP Server
 
@@ -95,19 +78,21 @@ ${spec.info.description ? spec.info.description + '\n' : ''}
 \`\`\`bash
 npm install
 cp .env.example .env
-# Fill in your credentials
 npm run dev
 \`\`\`
 
 ${envSection}
+## Tools
+
+This server exposes exactly **2 tools** regardless of how many endpoints the API has:
+
+- \`search_api_docs\` — semantic search over all ${spec.endpoints.length} endpoints; returns IDs and parameter schemas
+- \`call_api\` — executes any endpoint by ID with the params you provide
+
+Always call \`search_api_docs\` first to find the right endpoint ID, then call \`call_api\` with it.
+
 ## Embedding / search
 
 ${providerNote}
-
-## Tools
-
-This server exposes **${spec.endpoints.length} API tools** plus a \`search_api_docs\` tool for RAG-powered discovery.
-
-Start by calling \`search_api_docs\` to find relevant endpoints before calling them directly.
 `;
 }

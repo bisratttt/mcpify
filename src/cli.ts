@@ -18,7 +18,7 @@ program
   .requiredOption('-o, --output <dir>', 'Output directory for the generated MCP server')
   .option('-n, --name <name>', 'Override the server name')
   .option('--base-url <url>', 'Override the API base URL')
-  .option('--embedding-provider <provider>', 'Embedding provider: openai (default) or ollama', 'openai')
+  .option('--embedding-provider <provider>', 'Embedding provider: local (default, no API key), openai, or ollama', 'local')
   .option('--embedding-model <model>', 'Embedding model to use')
   .action(async (input: string, opts: {
     output: string;

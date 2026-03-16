@@ -55,7 +55,7 @@ server.tool(
     outputDir: z.string().describe('Directory where the generated MCP server will be written'),
     name: z.string().optional().describe('Override the generated server name'),
     baseUrl: z.string().optional().describe('Override the API base URL from the spec'),
-    embeddingProvider: z.enum(['openai', 'ollama']).optional().default('openai').describe('Embedding provider for search indexing'),
+    embeddingProvider: z.enum(['local', 'openai', 'ollama']).optional().default('local').describe('Embedding provider: local (default, no API key needed), openai, or ollama'),
     embeddingModel: z.string().optional().describe('Embedding model (e.g. text-embedding-3-small or nomic-embed-text)'),
   },
   async ({ input, outputDir, name, baseUrl, embeddingProvider, embeddingModel }) => {

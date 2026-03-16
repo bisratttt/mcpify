@@ -2,21 +2,29 @@
 
 > Your API spec walked in. An MCP server walked out.
 
-**mcpify** converts API specs into fully working [MCP](https://modelcontextprotocol.io) servers — complete with one tool per endpoint, a RAG-powered search tool backed by SQLite, and auto-extracted auth config. Feed it a spec, point an AI agent at the output, and get to work.
+**mcpify** converts API specs into fully working [MCP](https://modelcontextprotocol.io) servers. Point it at an OpenAPI file, a Postman collection, a HAR capture, or a GraphQL schema — it parses every endpoint, builds a local semantic search index, and spits out a TypeScript MCP server ready to run.
 
 No boilerplate. No copy-pasting curl examples. Just tools.
+
+## Why 2 tools, not 500
+
+The obvious approach — one MCP tool per endpoint — falls apart fast. Connect an agent to an API with 200 endpoints and 200 tool schemas land in context before the agent asks anything. Mcpify 10,000 API docs and you've got a context bonfire.
+
+mcpify generates exactly **2 tools** regardless of API size:
+
+| Tool | What it does |
+|---|---|
+| `search_api_docs` | Semantic search over all endpoints — returns IDs + param schemas on demand |
+| `call_api` | Executes any endpoint by ID with the params you provide |
+
+The agent searches first, gets back what it needs, then calls. Context stays clean whether the API has 10 endpoints or 10,000.
 
 ## What it does
 
 1. **Parse** your spec (OpenAPI 2/3, Postman, HAR, GraphQL)
-2. **Index** every endpoint into a local SQLite database with vector embeddings
-3. **Generate** a self-contained TypeScript MCP server with:
-   - One tool per API endpoint, input schema derived from the spec
-   - A `search_api_docs` tool for RAG-powered endpoint discovery
-   - A `.env.example` listing every auth credential the API needs
-4. **Run** the server — your AI agent can now call any endpoint directly
-
-The `search_api_docs` tool means the agent never has to load your entire API into context. It searches, finds what it needs, then calls it. Clean context, useful tools.
+2. **Embed** every endpoint with [Qwen3-Embedding-0.6B](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B) (local, no API key) and store in SQLite
+3. **Generate** a self-contained TypeScript MCP server with `search_api_docs` + `call_api` and a `.env.example` for auth
+4. **Run** the server — your agent finds what it needs, calls it, done
 
 ## Supported input formats
 
@@ -48,21 +56,22 @@ npx mcpify convert ./openapi.yaml -o ./my-api-mcp
 # Preview what mcpify sees in a spec
 mcpify inspect ./openapi.yaml
 
-# Convert to a working MCP server
+# Convert — uses local Qwen3 embeddings by default (no API key needed)
 mcpify convert ./openapi.yaml -o ./my-api-mcp
 
-# Use a remote spec
+# Remote spec
 mcpify convert https://petstore3.swagger.io/api/v3/openapi.json -o ./petstore-mcp
 
-# Use Ollama for embeddings instead of OpenAI
+# Use OpenAI embeddings instead
+mcpify convert ./openapi.yaml -o ./my-api-mcp --embedding-provider openai
+
+# Use Ollama
 mcpify convert ./openapi.yaml -o ./my-api-mcp --embedding-provider ollama
 ```
 
 ### As an MCP server (for AI agents)
 
-mcpify itself is an MCP server — so your AI agent can call it directly without dropping to a shell.
-
-Add to your MCP config:
+mcpify itself is an MCP server — so your agent can convert specs without dropping to a shell.
 
 ```json
 {
@@ -75,10 +84,10 @@ Add to your MCP config:
 }
 ```
 
-Available tools:
+Tools exposed:
 
 - **`inspect_spec`** — parse a spec and return a summary of endpoints, auth, and format
-- **`convert_spec`** — full conversion: parse → index → generate MCP server, returns output path and required env vars
+- **`convert_spec`** — full conversion: parse → embed → index → generate, returns output path and required env vars
 
 ### As a library
 
@@ -88,49 +97,58 @@ import { parseSpec, generateMcpServer } from 'mcpify';
 const spec = await parseSpec('./openapi.yaml');
 const result = await generateMcpServer(spec, {
   outputDir: './my-api-mcp',
-  embeddingProvider: 'openai',
+  // embeddingProvider: 'local' is the default — no API key needed
 });
 
-console.log(`Generated ${result.endpointsIndexed} tools`);
+console.log(`Indexed ${result.endpointsIndexed} endpoints`);
 console.log('Set these env vars:', result.envVars.map(v => v.name));
 ```
 
 ## Generated server
 
-Running `mcpify convert` creates a directory like this:
-
 ```
 my-api-mcp/
 ├── src/
-│   └── server.ts        # MCP server — one tool per endpoint + search
+│   └── server.ts        # 2-tool MCP server (search_api_docs + call_api)
 ├── db/
-│   └── api.sqlite       # Pre-built search index with embeddings
+│   └── api.sqlite       # Pre-built semantic search index
 ├── .env.example         # Required auth credentials
 ├── package.json
 ├── tsconfig.json
 └── README.md
 ```
 
-Run it:
-
 ```bash
 cd my-api-mcp
 npm install
-cp .env.example .env   # fill in your credentials
+cp .env.example .env   # fill in your API credentials
 npm run dev
 ```
 
 ## Embeddings
 
-The `search_api_docs` tool uses vector similarity to find relevant endpoints. You need an embedding provider:
+Search uses vector similarity. Three providers — the default needs nothing installed.
 
-**OpenAI (default)**
+### Local — Qwen3-Embedding-0.6B (default)
+
+No API key. No external service. ~614MB download on first use, cached to `~/.cache/huggingface/`.
+
 ```bash
-export OPENAI_API_KEY=sk-...
 mcpify convert ./spec.yaml -o ./output
+# that's it
 ```
 
-**Ollama (fully local, no API key)**
+Uses [`onnx-community/Qwen3-Embedding-0.6B-ONNX`](https://huggingface.co/onnx-community/Qwen3-Embedding-0.6B-ONNX) at `q8` quantization via `@huggingface/transformers`. 1024-dim embeddings, decoder-style model with last-token pooling.
+
+### OpenAI
+
+```bash
+export OPENAI_API_KEY=sk-...
+mcpify convert ./spec.yaml -o ./output --embedding-provider openai
+```
+
+### Ollama
+
 ```bash
 ollama pull nomic-embed-text
 mcpify convert ./spec.yaml -o ./output --embedding-provider ollama

@@ -1,6 +1,6 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'TRACE';
 export type SpecFormat = 'openapi2' | 'openapi3' | 'postman' | 'har' | 'graphql';
-export type EmbeddingProvider = 'openai' | 'ollama';
+export type EmbeddingProvider = 'openai' | 'ollama' | 'local';
 
 export interface NormalizedSpec {
   info: ApiInfo;
@@ -81,4 +81,5 @@ export interface EmbedConfig {
   model?: string;
   apiKey?: string;
   baseUrl?: string;
+  dtype?: string; // for local provider: 'q8' (default), 'fp16', 'fp32'
 }
