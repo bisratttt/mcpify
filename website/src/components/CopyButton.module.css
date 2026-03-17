@@ -1,20 +1,18 @@
 .btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 9px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   background: var(--surface2);
   border: 1px solid var(--border);
-  border-radius: 6px;
   color: var(--muted);
   cursor: pointer;
-  font-size: .75rem;
-  font-family: var(--mono);
   transition: color .2s, border-color .2s;
 }
 
 .btn:hover {
-  color: var(--text);
+  color: var(--accent);
   border-color: var(--accent);
 }
 

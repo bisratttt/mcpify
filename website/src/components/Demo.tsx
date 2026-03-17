@@ -14,7 +14,7 @@ const SCRIPT: ScriptLine[] = [
   { delay: 0,    type: 'prompt',      text: '$ search_docs "send an SMS message"' },
   { delay: 700,  type: 'output',      text: 'Searching 197 endpoints...' },
   { delay: 1200, type: 'blank' },
-  { delay: 1300, type: 'bill',        text: 'createMessage2010 (POST /2010-04-01/Accounts/{AccountSid}/Messages.json) 💸 BILLABLE' },
+  { delay: 1300, type: 'bill',        text: 'createMessage2010 (POST /2010-04-01/Accounts/{AccountSid}/Messages.json) $ BILLABLE' },
   { delay: 1400, type: 'dim',         text: '  Send a message from the account used to make the request' },
   { delay: 1450, type: 'dim',         text: '  Params: AccountSid (path, required), To (body, required), From (body, required)' },
   { delay: 1500, type: 'dim',         text: '  Body: required — {To: string, From: string, Body: string, MediaUrl: string}' },
@@ -70,7 +70,6 @@ export default function Demo() {
     });
   };
 
-  // Auto-play once when scrolled into view
   useEffect(() => {
     if (visible && !startedRef.current) {
       startedRef.current = true;
@@ -82,20 +81,17 @@ export default function Demo() {
 
   return (
     <section id="demo" className={styles.section}>
-      <div className={styles.label}>See it in action</div>
-      <h2>Twilio SMS, start to finish</h2>
+      <div className={styles.label}>SEE IT IN ACTION</div>
+      <h2 className={styles.heading}>Twilio SMS, start to finish</h2>
       <p className={styles.sub}>
-        An agent using a generated apimcp server — searching for the right
+        An agent using a generated build-mcp server — searching for the right
         endpoint, seeing the safety context, then calling it.
       </p>
 
       <div ref={ref} className={styles.terminal}>
         <div className={styles.bar}>
-          <span className={`${styles.dot} ${styles.red}`} />
-          <span className={`${styles.dot} ${styles.yellow}`} />
-          <span className={`${styles.dot} ${styles.green}`} />
           <span className={styles.title}>twilio-api · MCP server</span>
-          <button className={styles.replay} onClick={play}>↺ replay</button>
+          <button className={styles.replay} onClick={play}>REPLAY</button>
         </div>
         <div className={styles.body} ref={bodyRef}>
           {lines.map((line, i) => (

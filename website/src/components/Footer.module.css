@@ -1,16 +1,15 @@
 .footer {
   border-top: 1px solid var(--border);
-  padding: 40px 24px;
+  padding: 32px 24px;
   text-align: center;
-  font-size: .85rem;
+  font-size: .8rem;
   color: var(--muted);
 }
 
-.footer a { color: var(--muted); }
-.footer a:hover { color: var(--accent); }
-.footer strong { color: var(--text); }
+.footer a {
+  color: var(--muted);
+}
 
-.sub {
-  margin-top: 8px;
-  font-size: .78rem;
+.footer a:hover {
+  color: var(--accent);
 }

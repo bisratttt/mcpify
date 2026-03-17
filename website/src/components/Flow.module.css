@@ -1,0 +1,150 @@
+.section {
+  padding: 40px 24px 80px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.format {
+  font-family: var(--mono);
+  font-size: .8rem;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface);
+  opacity: 0;
+  transform: translateX(-16px);
+  transition: all .4s ease;
+}
+
+.format.show {
+  opacity: 1;
+  transform: translateX(0);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.connector {
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+
+.connector.show {
+  opacity: 1;
+}
+
+.stream {
+  font-family: var(--mono);
+  font-size: .85rem;
+  color: var(--green);
+  animation: pulse 1.5s ease-in-out infinite;
+  letter-spacing: 2px;
+}
+
+.agent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 28px;
+  border: 2px solid var(--accent);
+  background: var(--surface);
+  opacity: 0;
+  transform: scale(.9);
+  transition: all .4s ease;
+  position: relative;
+}
+
+.agent.show {
+  opacity: 1;
+  transform: scale(1);
+  box-shadow: 0 0 24px rgba(129,140,248,.2);
+}
+
+.agent::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(129,140,248,.3);
+  pointer-events: none;
+}
+
+.agentIcon {
+  color: var(--accent);
+}
+
+.agentLabel {
+  font-family: var(--pixel);
+  font-size: .5rem;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+.output {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transform: translateX(16px);
+  transition: all .4s ease;
+}
+
+.output.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.mcpBox {
+  font-family: var(--mono);
+  font-size: .8rem;
+  padding: 16px 24px;
+  border: 1px solid var(--green);
+  color: var(--green);
+  background: var(--surface);
+}
+
+.toolCount {
+  font-family: var(--mono);
+  font-size: .7rem;
+  color: var(--muted);
+}
+
+@media (max-width: 700px) {
+  .flow {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .inputs {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .connector {
+    transform: rotate(90deg);
+  }
+  .format {
+    transform: translateY(-12px);
+  }
+  .format.show {
+    transform: translateY(0);
+  }
+  .output {
+    transform: translateY(12px);
+  }
+  .output.show {
+    transform: translateY(0);
+  }
+}

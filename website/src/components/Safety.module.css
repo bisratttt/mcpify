@@ -6,85 +6,109 @@
 }
 
 .label {
-  font-family: var(--mono);
-  font-size: .75rem;
+  font-family: var(--pixel);
+  font-size: .55rem;
   color: var(--accent);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-}
-
-.section h2 {
-  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
-  font-weight: 800;
-  letter-spacing: -1px;
-  color: #f1f5f9;
+  letter-spacing: 3px;
   margin-bottom: 16px;
 }
 
+.heading {
+  font-family: var(--pixel);
+  font-size: clamp(1rem, 3vw, 1.8rem);
+  color: var(--text);
+  margin-bottom: 16px;
+  text-shadow: 0 0 20px rgba(129,140,248,.3);
+  line-height: 1.4;
+}
+
 .sub {
-  font-size: 1.05rem;
+  font-size: .9rem;
   color: var(--muted);
-  max-width: 540px;
-  margin-bottom: 56px;
+  max-width: 500px;
+  margin-bottom: 48px;
+  line-height: 1.7;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  gap: 20px;
 }
 
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 28px;
+  padding: 0;
   transition: border-color .3s;
   height: 100%;
-}
-
-.card:hover { border-color: var(--accent); }
-
-.icon {
-  font-size: 1.6rem;
-  margin-bottom: 16px;
-  display: block;
-}
-
-.card h3 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #f1f5f9;
-  margin-bottom: 10px;
-}
-
-.card p {
-  color: var(--muted);
-  font-size: .9rem;
-  margin-bottom: 20px;
-  line-height: 1.6;
-}
-
-.example {
-  background: #0d1117;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 14px;
-  font-family: var(--mono);
-  font-size: .75rem;
-  line-height: 1.75;
   display: flex;
   flex-direction: column;
 }
 
-.dim  { color: var(--muted); }
-.bill { color: var(--pink); }
-.read { color: var(--green); }
-.dest { color: var(--orange); }
-.err  { color: #ef4444; }
-.ok   { color: var(--green); }
-.hi   { color: var(--text); }
+.card:hover {
+  border-color: var(--accent);
+}
+
+.cardHeader {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.patternName {
+  font-family: var(--pixel);
+  font-size: .4rem;
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+
+.card h3 {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  padding: 20px 20px 8px;
+}
+
+.cardDesc {
+  font-size: .85rem;
+  color: var(--muted);
+  line-height: 1.6;
+  padding: 0 20px 16px;
+}
+
+.diagram {
+  margin-top: auto;
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: .65rem;
+  line-height: 1.5;
+  color: var(--green);
+  background: rgba(0,0,0,.3);
+  border-top: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.diagram::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,255,65,.03) 2px,
+    rgba(0,255,65,.03) 4px
+  );
+  pointer-events: none;
+}
+
+.diagramLine {
+  white-space: pre;
+  position: relative;
+}
 
 @media (max-width: 700px) {
   .section { padding: 64px 20px; }

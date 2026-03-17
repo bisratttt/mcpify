@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { useReveal } from './useReveal';
 import styles from './Reveal.module.css';
 

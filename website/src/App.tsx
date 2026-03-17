@@ -1,4 +1,3 @@
-import Nav from './components/Nav';
 import Hero from './components/Hero';
 import TwoTools from './components/TwoTools';
 import Safety from './components/Safety';
@@ -9,7 +8,6 @@ import Footer from './components/Footer';
 export default function App() {
   return (
     <>
-      <Nav />
       <Hero />
       <TwoTools />
       <Safety />

@@ -5,18 +5,18 @@ import styles from './QuickStart.module.css';
 const steps = [
   {
     n: '1',
-    title: 'Install',
-    cmd: 'npm install -g apimcp',
+    title: 'INSTALL',
+    cmd: 'npm install -g build-mcp',
   },
   {
     n: '2',
-    title: 'Convert your spec',
-    cmd: 'apimcp convert ./openapi.yaml -o ./my-api-mcp',
+    title: 'CONVERT YOUR SPEC',
+    cmd: 'build-mcp convert ./openapi.yaml -o ./my-api-mcp',
     note: 'Uses local Qwen3 embeddings by default — no API key needed. Pass --embedding-provider openai or ollama if you prefer.',
   },
   {
     n: '3',
-    title: 'Run it',
+    title: 'RUN IT',
     cmd: 'cd my-api-mcp && npm install && cp .env.example .env && npm start',
   },
 ];
@@ -24,8 +24,8 @@ const steps = [
 export default function QuickStart() {
   return (
     <section id="quickstart" className={styles.section}>
-      <Reveal><div className={styles.label}>Get started</div></Reveal>
-      <Reveal><h2>Three commands</h2></Reveal>
+      <Reveal><div className={styles.label}>GET STARTED</div></Reveal>
+      <Reveal><h2 className={styles.heading}>Three commands</h2></Reveal>
       <Reveal><p className={styles.sub}>From spec to running MCP server.</p></Reveal>
 
       <div className={styles.steps}>

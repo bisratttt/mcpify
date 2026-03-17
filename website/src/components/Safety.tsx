@@ -1,83 +1,87 @@
 import Reveal from './Reveal';
 import styles from './Safety.module.css';
 
-const features = [
+const patterns = [
   {
-    icon: '🏷️',
-    title: 'Safety classification',
+    name: 'CLASSIFICATION GATE',
+    title: 'Classification Gate',
     desc: 'Every endpoint is classified and badged before the agent decides what to call. A charge endpoint never looks the same as a list endpoint.',
-    example: (
-      <div className={styles.example}>
-        <span className={styles.dim}>$ search_docs "send an SMS"</span>
-        <span> </span>
-        <span className={styles.bill}>createMessage 💸 BILLABLE</span>
-        <span className={styles.dim}>  POST /Accounts/&#123;Sid&#125;/Messages</span>
-        <span> </span>
-        <span className={styles.read}>listMessages</span>
-        <span className={styles.dim}>  GET  /Accounts/&#123;Sid&#125;/Messages</span>
-        <span> </span>
-        <span className={styles.dest}>deleteMessage ⚠️ DESTRUCTIVE</span>
-        <span className={styles.dim}>  DELETE /Accounts/&#123;Sid&#125;/Messages/&#123;Sid&#125;</span>
-      </div>
-    ),
+    diagram: [
+      '+--------------------------+',
+      '|  incoming endpoint       |',
+      '+--------------------------+',
+      '|  v classify()            |',
+      '|  +- GET  -> READ         |',
+      '|  +- POST -> $ BILLABLE   |',
+      '|  +- DEL  -> ! DESTRUCT   |',
+      '+--------------------------+',
+      '|  badge -> agent context  |',
+      '+--------------------------+',
+    ],
   },
   {
-    icon: '✓',
-    title: 'Pre-call validation',
-    desc: 'Before any HTTP request leaves, params are checked against the spec. Bad calls are caught locally — no wasted API calls, no cryptic 400 errors.',
-    example: (
-      <div className={styles.example}>
-        <span className={styles.dim}>$ call_api "createMessage" \</span>
-        <span className={styles.dim}>    --params '&#123;"To": "+15551234"&#125;'</span>
-        <span> </span>
-        <span className={styles.err}>Validation failed — fix before calling:</span>
-        <span className={styles.err}>• 'AccountSid' (path) is required</span>
-        <span className={styles.err}>• 'From' (body) is required</span>
-        <span> </span>
-        <span className={styles.dim}>No HTTP request was made.</span>
-      </div>
-    ),
+    name: 'PREFLIGHT CHECK',
+    title: 'Pre-flight Validation',
+    desc: 'Params are checked against the spec before any HTTP request leaves. Bad calls are caught locally — no wasted API calls.',
+    diagram: [
+      '+--------------------------+',
+      '|  call_api(params)        |',
+      '+--------------------------+',
+      '|  v validate(spec)        |',
+      '|  +- required?  OK        |',
+      '|  +- type ok?   OK        |',
+      '|  +- in spec?   OK        |',
+      '+--------------------------+',
+      '|  PASS -> execute HTTP    |',
+      '|  FAIL -> error (no req)  |',
+      '+--------------------------+',
+    ],
   },
   {
-    icon: '✂️',
-    title: 'Smart response trimming',
-    desc: 'Large responses are summarized intelligently — paginated lists, large arrays, nested objects — so your agent\'s context stays focused.',
-    example: (
-      <div className={styles.example}>
-        <span className={styles.dim}># 197-item list response →</span>
-        <span> </span>
-        <span className={styles.ok}>197 items (has_more: true</span>
-        <span className={styles.ok}>  — paginate with page_token)</span>
-        <span> </span>
-        <span className={styles.hi}>First: &#123;"sid":"SM123","status":</span>
-        <span className={styles.hi}>  "delivered","to":"+1555..."&#125;</span>
-        <span className={styles.hi}>Last:  &#123;"sid":"SM456","status":</span>
-        <span className={styles.hi}>  "sent","to":"+1555..."&#125;</span>
-      </div>
-    ),
+    name: 'SMART TRUNCATION',
+    title: 'Smart Truncation',
+    desc: 'Large responses are summarized intelligently to preserve your agent\'s context window. No more drowning in data.',
+    diagram: [
+      '+--------------------------+',
+      '|  response (197 items)    |',
+      '+--------------------------+',
+      '|  v trim(response)        |',
+      '|  +- count: 197           |',
+      '|  +- has_more: true       |',
+      '|  +- first: {...}         |',
+      '|  +- last:  {...}         |',
+      '+--------------------------+',
+      '|  context saved: ~94%     |',
+      '+--------------------------+',
+    ],
   },
 ];
 
 export default function Safety() {
   return (
     <section id="safety" className={styles.section}>
-      <Reveal><div className={styles.label}>Built for production</div></Reveal>
-      <Reveal><h2>Safe by default</h2></Reveal>
+      <Reveal><div className={styles.label}>SAFETY</div></Reveal>
+      <Reveal><h2 className={styles.heading}>Safety Design Patterns</h2></Reveal>
       <Reveal>
         <p className={styles.sub}>
-          Giving an agent raw API access is risky. apimcp adds three layers
-          of protection — automatically, with no configuration.
+          Three patterns built into every generated server — no configuration required.
         </p>
       </Reveal>
 
       <div className={styles.grid}>
-        {features.map((f, i) => (
-          <Reveal key={f.title} delay={(i + 1) as 1 | 2 | 3}>
+        {patterns.map((p, i) => (
+          <Reveal key={p.name} delay={(i + 1) as 1 | 2 | 3}>
             <div className={styles.card}>
-              <span className={styles.icon}>{f.icon}</span>
-              <h3>{f.title}</h3>
-              <p>{f.desc}</p>
-              {f.example}
+              <div className={styles.cardHeader}>
+                <span className={styles.patternName}>{p.name}</span>
+              </div>
+              <h3>{p.title}</h3>
+              <p className={styles.cardDesc}>{p.desc}</p>
+              <div className={styles.diagram}>
+                {p.diagram.map((line, j) => (
+                  <div key={j} className={styles.diagramLine}>{line}</div>
+                ))}
+              </div>
             </div>
           </Reveal>
         ))}
