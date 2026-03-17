@@ -1,24 +1,102 @@
 import { DatabaseSync } from 'node:sqlite';
-import type { NormalizedSpec, Endpoint, EmbedConfig } from '../types.js';
+import type { NormalizedSpec, Endpoint, EmbedConfig, SafetyLevel } from '../types.js';
 import { embed, buildEndpointText } from './embed.js';
 
 /**
- * Strip JSON schemas from an endpoint before storing.
- * Dereferenced specs (e.g. Stripe) have circular $ref objects that
- * JSON.stringify can't handle. call_api only needs structural info —
- * method, path, param names/locations, and body content type.
+ * Extract only safe, non-circular scalar values from a parameter schema.
+ * Dereferenced specs can produce circular object references that crash JSON.stringify,
+ * but leaf values like `type`, `format`, and `enum` are always primitives — safe to keep.
+ */
+function simplifyParamSchema(schema: unknown): { type?: string; format?: string; enum?: unknown[] } | undefined {
+  if (!schema || typeof schema !== 'object') return undefined;
+  const s = schema as Record<string, unknown>;
+  const out: { type?: string; format?: string; enum?: unknown[] } = {};
+  if (typeof s['type'] === 'string') out.type = s['type'];
+  if (typeof s['format'] === 'string') out.format = s['format'];
+  if (Array.isArray(s['enum'])) out.enum = s['enum'] as unknown[];
+  return Object.keys(out).length ? out : undefined;
+}
+
+/**
+ * Extract only the top-level property names and their primitive types from a body schema.
+ * We only go one level deep so we never traverse circular references introduced by dereference().
+ */
+function simplifyBodySchema(schema: unknown): { properties?: Record<string, { type?: string }> } | undefined {
+  if (!schema || typeof schema !== 'object') return undefined;
+  const s = schema as Record<string, unknown>;
+  if (!s['properties'] || typeof s['properties'] !== 'object') return undefined;
+  const props = s['properties'] as Record<string, unknown>;
+  const simplified: Record<string, { type?: string }> = {};
+  for (const [k, v] of Object.entries(props)) {
+    if (v && typeof v === 'object') {
+      const pSchema = v as Record<string, unknown>;
+      simplified[k] = typeof pSchema['type'] === 'string' ? { type: pSchema['type'] } : {};
+    }
+  }
+  return Object.keys(simplified).length ? { properties: simplified } : undefined;
+}
+
+/**
+ * Classify an endpoint's safety level based on HTTP method and text heuristics.
+ *
+ * Priority: billable > destructive > write > read
+ *
+ * BILLABLE — mutating calls that cost money or trigger external side effects
+ *   (charges, payments, invoices, SMS/email sends). Errs on the side of caution.
+ * DESTRUCTIVE — DELETE method or mutating calls with irreversible semantics
+ *   (cancel, revoke, purge, terminate, etc.)
+ * WRITE — any other state-mutating method (POST, PUT, PATCH)
+ * READ — everything else (GET, HEAD, OPTIONS)
+ */
+export function classifySafety(ep: Pick<Endpoint, 'method' | 'path' | 'summary' | 'description'>): SafetyLevel {
+  const method = ep.method as string;
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+  const text = [ep.path, ep.summary, ep.description].filter(Boolean).join(' ').toLowerCase();
+
+  // Destructive checked before billable: "cancel payment" is more importantly
+  // destructive than billable — the cancellation is the dominant risk signal.
+  if (method === 'DELETE' || (isMutating && [
+    /\b(cancel|revoke|disable|suspend|archive|terminate)\b/,
+    /\b(purge|destroy|remove|wipe|flush|close|reset)\b/,
+  ].some(p => p.test(text)))) {
+    return 'destructive';
+  }
+
+  if (isMutating && [
+    /\bcharge[sd]?\b/, /\bpayment[s]?\b/, /\binvoice[s]?\b/,
+    /\bpurchase[s]?\b/, /\btransaction[s]?\b/, /\bbill(ing)?\b/,
+    /\bcheckout\b/, /\bsubscri(be|ption)\b/,
+    /\bsend\b/, /\bsms\b/, /\bmms\b/, /\bnotif(y|ication)\b/,
+  ].some(p => p.test(text))) {
+    return 'billable';
+  }
+
+  if (['POST', 'PUT', 'PATCH'].includes(method)) return 'write';
+  return 'read';
+}
+
+/**
+ * Sanitize an endpoint for SQLite storage: keep all structural info needed by call_api
+ * and search_docs (param types, body schema fields), but only store safe scalar values
+ * to avoid circular-reference crashes from swagger-parser's dereference output.
  */
 function sanitizeEndpoint(ep: Endpoint): Endpoint {
   return {
     ...ep,
+    safetyLevel: classifySafety(ep),
     parameters: ep.parameters.map(p => ({
       name: p.name,
       in: p.in,
       required: p.required,
       description: p.description,
+      schema: simplifyParamSchema(p.schema),
     })),
     requestBody: ep.requestBody
-      ? { required: ep.requestBody.required, contentType: ep.requestBody.contentType }
+      ? {
+          required: ep.requestBody.required,
+          contentType: ep.requestBody.contentType,
+          schema: simplifyBodySchema(ep.requestBody.schema),
+        }
       : undefined,
     responses: [],
   };

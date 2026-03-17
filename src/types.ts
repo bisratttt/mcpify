@@ -1,4 +1,5 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'TRACE';
+export type SafetyLevel = 'read' | 'write' | 'destructive' | 'billable';
 export type SpecFormat = 'openapi2' | 'openapi3' | 'postman' | 'har' | 'graphql';
 export type EmbeddingProvider = 'openai' | 'ollama' | 'local';
 
@@ -34,6 +35,7 @@ export interface Endpoint {
   responses: ResponseSpec[];
   security?: string[];
   deprecated?: boolean;
+  safetyLevel?: SafetyLevel;
 }
 
 export interface Parameter {

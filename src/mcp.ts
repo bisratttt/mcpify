@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * mcpify as an MCP server — so AI agents can call it directly.
+ * apimcp as an MCP server — so AI agents can call it directly.
  * Tools exposed:
  *   - convert_spec: Parse + generate an MCP server from a spec URL/path
  *   - inspect_spec: Parse and summarize a spec without generating
@@ -13,7 +13,7 @@ import { generateMcpServer } from './generator/index.js';
 import type { EmbeddingProvider } from './types.js';
 
 const server = new McpServer({
-  name: 'mcpify',
+  name: 'apimcp',
   version: '0.1.0',
 });
 
@@ -77,7 +77,7 @@ server.tool(
         `cd ${result.outputDir}`,
         'npm install',
         ...(result.envVars.length > 0 ? ['cp .env.example .env  # fill in your API credentials'] : []),
-        'npm run dev',
+        'npm start',
       ],
     };
 

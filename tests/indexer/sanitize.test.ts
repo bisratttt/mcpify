@@ -40,18 +40,21 @@ describe('sanitizeEndpoint — circular schema handling', () => {
       }],
     };
 
-    const indexer = new ApiIndexer(join(tmpdir(), `mcpify-circ-${randomUUID()}.sqlite`));
+    const indexer = new ApiIndexer(join(tmpdir(), `apimcp-circ-${randomUUID()}.sqlite`));
     // Should not throw "Converting circular structure to JSON"
     await expect(indexer.indexSpec(spec, { provider: 'openai' })).resolves.not.toThrow();
 
     const all = indexer.getAll();
     expect(all).toHaveLength(1);
     expect(all[0].id).toBe('createCharge');
-    // Schema should be stripped, parameter structure preserved
+    // Parameter structure and safe scalar values (type) are preserved
     expect(all[0].parameters[0].name).toBe('amount');
-    expect(all[0].parameters[0].schema).toBeUndefined();
+    expect(all[0].parameters[0].schema).toEqual({ type: 'object' });
     expect(all[0].requestBody?.contentType).toBe('application/x-www-form-urlencoded');
+    // Circular body schema has no properties to extract, so schema is undefined
     expect(all[0].requestBody?.schema).toBeUndefined();
+    // The circular reference itself must not be stored
+    expect(JSON.stringify(all[0])).not.toContain('self');
     expect(all[0].responses).toHaveLength(0);
     indexer.close();
   });

@@ -8,7 +8,7 @@ import type { EmbeddingProvider } from './types.js';
 const program = new Command();
 
 program
-  .name('mcpify')
+  .name('apimcp')
   .description('Turn any API spec into an MCP server')
   .version('0.1.0');
 
@@ -28,7 +28,7 @@ program
     embeddingModel?: string;
   }) => {
     try {
-      console.log(chalk.bold('\n mcpify') + chalk.dim(' — converting spec...\n'));
+      console.log(chalk.bold('\n apimcp') + chalk.dim(' — converting spec...\n'));
 
       console.log(chalk.dim(`  Parsing ${input}...`));
       const spec = await parseSpec(input);
@@ -58,7 +58,7 @@ program
       console.log(chalk.dim(`    cd ${opts.output}`));
       console.log(chalk.dim('    npm install'));
       if (result.envVars.length > 0) console.log(chalk.dim('    cp .env.example .env  # fill in credentials'));
-      console.log(chalk.dim('    npm run dev\n'));
+      console.log(chalk.dim('    npm start\n'));
 
     } catch (err) {
       console.error(chalk.red('\n  Error: ') + (err instanceof Error ? err.message : String(err)));

@@ -78,6 +78,29 @@ describe('formatEndpointForSearch', () => {
     expect(result).toContain('Body: required (application/json)');
   });
 
+  it('shows body schema properties when present', () => {
+    const result = formatEndpointForSearch(makeEndpoint({
+      requestBody: {
+        required: true,
+        contentType: 'application/json',
+        schema: { properties: { name: { type: 'string' }, age: { type: 'integer' } } },
+      },
+    }));
+    expect(result).toContain('name: string');
+    expect(result).toContain('age: integer');
+  });
+
+  it('caps body schema properties at 8 fields', () => {
+    const properties = Object.fromEntries(
+      Array.from({ length: 12 }, (_, i) => [`field${i}`, { type: 'string' }])
+    );
+    const result = formatEndpointForSearch(makeEndpoint({
+      requestBody: { required: true, contentType: 'application/json', schema: { properties } },
+    }));
+    expect(result).toContain('field0: string');
+    expect(result).not.toContain('field8: string');
+  });
+
   it('shows optional body', () => {
     const result = formatEndpointForSearch(makeEndpoint({
       requestBody: { required: false, contentType: 'application/json' },

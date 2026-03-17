@@ -1,4 +1,4 @@
-// Library entry point — use mcpify programmatically
+// Library entry point — use apimcp programmatically
 export { parseSpec } from './parsers/index.js';
 export { generateMcpServer } from './generator/index.js';
 export { ApiIndexer } from './indexer/index.js';

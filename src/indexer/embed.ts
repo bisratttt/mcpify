@@ -69,12 +69,20 @@ export function buildEndpointText(endpoint: {
   description?: string;
   tags: string[];
   parameters: Array<{ name: string; description?: string }>;
+  requestBody?: { description?: string; schema?: { properties?: Record<string, unknown> } };
 }): string {
+  const bodyFields = endpoint.requestBody?.schema?.properties
+    ? Object.keys(endpoint.requestBody.schema.properties).join(', ')
+    : undefined;
+  const bodyDesc = endpoint.requestBody?.description;
+
   return [
     `${endpoint.method} ${endpoint.path}`,
     endpoint.summary,
     endpoint.description,
     endpoint.tags.join(', '),
     endpoint.parameters.map(p => `${p.name}${p.description ? ': ' + p.description : ''}`).join(', '),
+    bodyDesc,
+    bodyFields,
   ].filter(Boolean).join(' | ');
 }

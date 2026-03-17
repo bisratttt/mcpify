@@ -1,14 +1,18 @@
 {
-  "name": "mcpify",
+  "name": "apimcp",
   "version": "0.1.0",
   "description": "Turn any API spec into an MCP server — on demand, without clogging your context",
   "type": "module",
   "bin": {
-    "mcpify": "./dist/cli.js"
+    "apimcp": "./dist/cli.js"
   },
   "exports": {
     ".": "./dist/index.js"
   },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/cli.ts",
@@ -19,7 +23,6 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
     "@apidevtools/swagger-parser": "^10.1.0",
     "@huggingface/transformers": "^3.8.1",
     "@modelcontextprotocol/sdk": "^1.10.0",

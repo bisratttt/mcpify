@@ -1,12 +1,20 @@
-import type { Endpoint } from '../types.js';
+import type { Endpoint, SafetyLevel } from '../types.js';
+
+const SAFETY_BADGE: Record<SafetyLevel, string> = {
+  read:        '',
+  write:       ' [WRITE]',
+  destructive: ' ⚠️ DESTRUCTIVE',
+  billable:    ' 💸 BILLABLE',
+};
 
 /**
- * Formats an endpoint for display in search_api_docs results.
+ * Formats an endpoint for display in search_docs results.
  * Gives the agent everything it needs to call call_api correctly.
  */
 export function formatEndpointForSearch(ep: Endpoint): string {
+  const safety = ep.safetyLevel ? SAFETY_BADGE[ep.safetyLevel] : '';
   const lines: string[] = [
-    `${ep.id} (${ep.method} ${ep.path})${ep.deprecated ? ' ⚠️ DEPRECATED' : ''}`,
+    `${ep.id} (${ep.method} ${ep.path})${safety}${ep.deprecated ? ' ⚠️ DEPRECATED' : ''}`,
     `  ${ep.summary ?? ep.description ?? '(no description)'}`,
   ];
 
@@ -22,7 +30,11 @@ export function formatEndpointForSearch(ep: Endpoint): string {
   }
 
   if (ep.requestBody) {
-    lines.push(`  Body: ${ep.requestBody.required ? 'required' : 'optional'} (${ep.requestBody.contentType})`);
+    const schema = ep.requestBody.schema as { properties?: Record<string, { type?: string }> } | undefined;
+    const fields = schema?.properties
+      ? ' — {' + Object.entries(schema.properties).slice(0, 8).map(([k, v]) => `${k}: ${v.type ?? 'any'}`).join(', ') + '}'
+      : '';
+    lines.push(`  Body: ${ep.requestBody.required ? 'required' : 'optional'} (${ep.requestBody.contentType})${fields}`);
   }
 
   if (ep.tags.length) lines.push(`  Tags: ${ep.tags.join(', ')}`);

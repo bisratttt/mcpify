@@ -24,7 +24,7 @@ vi.mock('../../src/indexer/embed.js', () => ({
 }));
 
 function makeTempDb(): string {
-  return join(tmpdir(), `mcpify-test-${randomUUID()}.sqlite`);
+  return join(tmpdir(), `apimcp-test-${randomUUID()}.sqlite`);
 }
 
 const mockSpec: NormalizedSpec = {

@@ -1,4 +1,4 @@
-# mcpify — project context for Claude
+# apimcp — project context for Claude
 
 ## README maintenance
 
