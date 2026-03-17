@@ -1,13 +1,13 @@
-# apimcp
+# build-mcp
 
 > Your API spec walked in. An MCP server walked out.
 
-**apimcp** turns any API spec into a production-ready [MCP](https://modelcontextprotocol.io) server in one command. Point it at an OpenAPI file, a Postman collection, a HAR capture, or a GraphQL schema — and get a fully working MCP server with semantic search, pre-call validation, and smart response trimming.
+**build-mcp** turns any API spec into a production-ready [MCP](https://modelcontextprotocol.io) server in one command. Point it at an OpenAPI file, a Postman collection, a HAR capture, or a GraphQL schema — and get a fully working MCP server with semantic search, pre-call validation, and smart response trimming.
 
 No boilerplate. No copy-pasting. No accidental charges. Just tools.
 
 ```bash
-npx apimcp convert ./stripe-openapi.yaml -o ./stripe-mcp
+npx build-mcp convert ./stripe-openapi.yaml -o ./stripe-mcp
 cd stripe-mcp && npm install && npm start
 ```
 
@@ -21,7 +21,7 @@ The obvious approach — one MCP tool per endpoint — falls apart fast.
 
 Connect an agent to an API with 200 endpoints and 200 tool schemas land in context before the agent asks anything. Connect it to 10 APIs and you've built a context bonfire. Cursor has a hard cap of 40 tools. One busy MCP server can eat 70%+ of your context window before your agent says hello.
 
-**apimcp generates exactly 2 tools, no matter the API size:**
+**build-mcp generates exactly 2 tools, no matter the API size:**
 
 | Tool | What it does |
 |---|---|
@@ -88,27 +88,27 @@ API responses can be enormous. The generated server automatically summarizes:
 
 ```bash
 # Install globally
-npm install -g apimcp
+npm install -g build-mcp
 
 # Or just run with npx
-npx apimcp convert ./openapi.yaml -o ./my-api-mcp
+npx build-mcp convert ./openapi.yaml -o ./my-api-mcp
 ```
 
 ```bash
-# Preview what apimcp sees before converting
-apimcp inspect ./openapi.yaml
+# Preview what build-mcp sees before converting
+build-mcp inspect ./openapi.yaml
 
 # Convert with local embeddings (default — no API key needed)
-apimcp convert ./openapi.yaml -o ./my-api-mcp
+build-mcp convert ./openapi.yaml -o ./my-api-mcp
 
 # Convert from a remote spec URL
-apimcp convert https://petstore3.swagger.io/api/v3/openapi.json -o ./petstore-mcp
+build-mcp convert https://petstore3.swagger.io/api/v3/openapi.json -o ./petstore-mcp
 
 # Use OpenAI embeddings
-apimcp convert ./openapi.yaml -o ./my-api-mcp --embedding-provider openai
+build-mcp convert ./openapi.yaml -o ./my-api-mcp --embedding-provider openai
 
 # Use Ollama
-apimcp convert ./openapi.yaml -o ./my-api-mcp --embedding-provider ollama
+build-mcp convert ./openapi.yaml -o ./my-api-mcp --embedding-provider ollama
 ```
 
 ### Run the generated server
@@ -135,16 +135,16 @@ npm start
 
 ---
 
-## Let your agent run apimcp directly
+## Let your agent run build-mcp directly
 
-apimcp is itself an MCP server — so an AI agent can convert specs without dropping to a shell.
+build-mcp is itself an MCP server — so an AI agent can convert specs without dropping to a shell.
 
 ```json
 {
   "mcpServers": {
-    "apimcp": {
+    "build-mcp": {
       "command": "npx",
-      "args": ["apimcp", "mcp"]
+      "args": ["build-mcp", "mcp"]
     }
   }
 }
@@ -160,7 +160,7 @@ Tools exposed to the agent:
 ## Use as a library
 
 ```typescript
-import { parseSpec, generateMcpServer } from 'apimcp';
+import { parseSpec, generateMcpServer } from 'build-mcp';
 
 const spec = await parseSpec('./openapi.yaml');
 const result = await generateMcpServer(spec, {
@@ -199,7 +199,7 @@ Search is powered by vector similarity. Three providers — the default needs no
 No API key. No external service. ~614MB download on first use, cached to `~/.cache/huggingface/`. Subsequent runs are instant.
 
 ```bash
-apimcp convert ./spec.yaml -o ./output
+build-mcp convert ./spec.yaml -o ./output
 # that's it — embeddings run locally
 ```
 
@@ -209,21 +209,21 @@ Uses [`onnx-community/Qwen3-Embedding-0.6B-ONNX`](https://huggingface.co/onnx-co
 
 ```bash
 export OPENAI_API_KEY=sk-...
-apimcp convert ./spec.yaml -o ./output --embedding-provider openai
+build-mcp convert ./spec.yaml -o ./output --embedding-provider openai
 ```
 
 ### Ollama
 
 ```bash
 ollama pull nomic-embed-text
-apimcp convert ./spec.yaml -o ./output --embedding-provider ollama
+build-mcp convert ./spec.yaml -o ./output --embedding-provider ollama
 ```
 
 ---
 
 ## Contributing
 
-Early days — pull requests, issues, and ideas are all welcome. Check [issues](https://github.com/bisratttt/apimcp/issues) for what's cooking.
+Early days — pull requests, issues, and ideas are all welcome. Check [issues](https://github.com/bisratttt/build-mcp/issues) for what's cooking.
 
 ## License
 

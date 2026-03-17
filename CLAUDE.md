@@ -1,4 +1,4 @@
-# apimcp — project context for Claude
+# build-mcp — project context for Claude
 
 ## README maintenance
 

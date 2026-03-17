@@ -40,7 +40,7 @@ describe('sanitizeEndpoint — circular schema handling', () => {
       }],
     };
 
-    const indexer = new ApiIndexer(join(tmpdir(), `apimcp-circ-${randomUUID()}.sqlite`));
+    const indexer = new ApiIndexer(join(tmpdir(), `build-mcp-circ-${randomUUID()}.sqlite`));
     // Should not throw "Converting circular structure to JSON"
     await expect(indexer.indexSpec(spec, { provider: 'openai' })).resolves.not.toThrow();
 

@@ -8,7 +8,7 @@ import type { EmbeddingProvider } from './types.js';
 const program = new Command();
 
 program
-  .name('apimcp')
+  .name('build-mcp')
   .description('Turn any API spec into an MCP server')
   .version('0.1.0');
 
@@ -28,7 +28,7 @@ program
     embeddingModel?: string;
   }) => {
     try {
-      console.log(chalk.bold('\n apimcp') + chalk.dim(' — converting spec...\n'));
+      console.log(chalk.bold('\n build-mcp') + chalk.dim(' — converting spec...\n'));
 
       console.log(chalk.dim(`  Parsing ${input}...`));
       const spec = await parseSpec(input);

@@ -31,3 +31,6 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Website build output (source tracked, dist not)
+website/dist/
