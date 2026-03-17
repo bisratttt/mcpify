@@ -9,41 +9,77 @@ export default function TwoTools() {
   const [visible, setVisible] = useState(false);
   const countRef = useRef(0);
   const sectionRef = useRef<HTMLElement>(null);
-  const startedRef = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !startedRef.current) {
-          startedRef.current = true;
-          setVisible(true);
-          const interval = setInterval(() => {
-            countRef.current += Math.ceil(Math.random() * 12);
-            if (countRef.current >= 500) {
-              countRef.current = 500;
-              clearInterval(interval);
-            }
-            setCount(countRef.current);
-          }, 30);
+        if (entry.isIntersecting) {
+          // reset and restart every time it enters view
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          countRef.current = 0;
+          setCount(0);
+          setVisible(false);
+          // tick to let pill animation reset before re-adding the class
+          requestAnimationFrame(() => {
+            setVisible(true);
+            intervalRef.current = setInterval(() => {
+              countRef.current += Math.ceil(Math.random() * 12);
+              if (countRef.current >= 500) {
+                countRef.current = 500;
+                clearInterval(intervalRef.current!);
+              }
+              setCount(countRef.current);
+            }, 30);
+          });
+        } else {
+          if (intervalRef.current) clearInterval(intervalRef.current);
         }
       },
       { threshold: 0.3 }
     );
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 
   return (
     <section id="two-tools" className={styles.section} ref={sectionRef}>
       <Reveal><div className={styles.label}>ARCHITECTURE</div></Reveal>
-      <Reveal><h2 className={styles.heading}>2 tools, not 500</h2></Reveal>
+      <Reveal><h2 className={styles.heading}>find then call — two moves, any API</h2></Reveal>
       <Reveal>
         <p className={styles.sub}>
-          One tool per endpoint drowns your agent before it asks a question.
-          build-mcp generates exactly two tools, regardless of API size.
+          Most servers dump every endpoint as a separate tool and hope the agent picks right.
+          build-mcp gives your agent semantic search to find the relevant endpoint from plain English,
+          and a single executor to call it. Local embeddings, no config, no context overflow.
         </p>
+      </Reveal>
+
+      <Reveal>
+        <div className={styles.semanticBlock}>
+          <div className={styles.semanticHeader}>
+            <span className={styles.semanticTag}>SEMANTIC SEARCH</span>
+            <span className={styles.semanticTagline}>find the right endpoint — no exact name required</span>
+          </div>
+          <div className={styles.semanticFlow}>
+            <div className={styles.semanticStep}>
+              <span className={styles.stepQuery}>"list all unpaid invoices"</span>
+              <span className={styles.stepArrow}>↓</span>
+              <span className={styles.stepEmbed}>Qwen3 embedding (local, no API key)</span>
+              <span className={styles.stepArrow}>↓</span>
+              <span className={styles.stepResult}>→ GET /invoices — params: status, limit, cursor</span>
+            </div>
+          </div>
+          <p className={styles.semanticNote}>
+            search_docs returns the endpoint schema. The agent reads the params and decides what to pass to call_api.
+          </p>
+          <div className={styles.semanticFeatures}>
+            <div className={styles.semanticFeature}><span className={styles.featureDot} />runs entirely offline</div>
+            <div className={styles.semanticFeature}><span className={styles.featureDot} />no OpenAI key needed</div>
+            <div className={styles.semanticFeature}><span className={styles.featureDot} />SQLite vector index, zero dependencies</div>
+          </div>
+        </div>
       </Reveal>
 
       <Reveal>
