@@ -49,7 +49,7 @@ server.tool(
 
 server.tool(
   'convert_spec',
-  'Convert an API spec into a fully working MCP server. Parses the spec, builds a sqlite-vec search index, generates TypeScript MCP server code with one tool per endpoint plus a RAG search tool. Returns the output directory path and required environment variables.',
+  'Convert an API spec into a fully working MCP server. Parses the spec, indexes all endpoints into SQLite with embeddings, and generates a TypeScript MCP server with exactly 2 tools (search_docs + call_api) regardless of how many endpoints the API has. Returns the output directory path and required environment variables.',
   {
     input: z.string().describe('File path or URL to the API spec'),
     outputDir: z.string().describe('Directory where the generated MCP server will be written'),
@@ -64,7 +64,7 @@ server.tool(
       outputDir,
       name,
       baseUrl,
-      embeddingProvider: (embeddingProvider ?? 'openai') as EmbeddingProvider,
+      embeddingProvider: embeddingProvider as EmbeddingProvider,
       embeddingModel,
     });
 

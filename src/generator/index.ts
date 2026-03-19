@@ -5,6 +5,7 @@ import { ApiIndexer } from '../indexer/index.js';
 import { QWEN3_MODEL } from '../indexer/embed.js';
 import { extractRequiredEnvVars, buildDotEnvExample } from './auth.js';
 import { generateServerTs, generatePackageJson, generateTsConfig } from './server-template.js';
+import { generateWorkflowsMd } from './workflows.js';
 
 function defaultModel(provider: EmbeddingProvider): string {
   switch (provider) {
@@ -45,8 +46,10 @@ export async function generateMcpServer(
   indexer.close();
 
   const envVars = extractRequiredEnvVars(spec.auth, spec.endpoints);
+  const workflowsMd = generateWorkflowsMd(spec.endpoints);
 
-  writeFileSync(join(outDir, 'src', 'server.ts'), generateServerTs(specWithBaseUrl, spec.auth, provider, model));
+  writeFileSync(join(outDir, 'src', 'server.ts'), generateServerTs(specWithBaseUrl, spec.auth, provider, model, workflowsMd));
+  writeFileSync(join(outDir, 'WORKFLOWS.md'), workflowsMd);
   writeFileSync(join(outDir, 'package.json'), generatePackageJson(name, spec.info.version, provider));
   writeFileSync(join(outDir, 'tsconfig.json'), generateTsConfig());
   writeFileSync(join(outDir, '.env.example'), buildDotEnvExample(envVars));
@@ -65,8 +68,10 @@ function generateReadme(
     : '';
 
   const providerNote = provider === 'openai'
-    ? '- `OPENAI_API_KEY` — required for the `search_api_docs` tool'
-    : '- Configure `OLLAMA_HOST` if Ollama is not on localhost';
+    ? '- `OPENAI_API_KEY` — required for the `search_docs` tool'
+    : provider === 'ollama'
+    ? '- Configure `OLLAMA_HOST` if Ollama is not on localhost'
+    : '- No API key required — uses the embedded Qwen3 model (first run downloads ~614MB)';
 
   return `# ${spec.info.title} MCP Server
 

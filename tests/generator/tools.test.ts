@@ -120,4 +120,46 @@ describe('formatEndpointForSearch', () => {
     expect(result).not.toContain('Body:');
     expect(result).not.toContain('Tags:');
   });
+
+  it('shows Returns line for 200 response with object schema', () => {
+    const result = formatEndpointForSearch(makeEndpoint({
+      responses: [{ statusCode: '200', schema: { type: 'object', properties: { id: { type: 'string' }, name: { type: 'string' } } } }],
+    }));
+    expect(result).toContain('Returns (200): { id: string, name: string }');
+  });
+
+  it('shows Returns line for array response with items', () => {
+    const result = formatEndpointForSearch(makeEndpoint({
+      responses: [{ statusCode: '200', schema: { type: 'array', items: { properties: { id: { type: 'string' }, status: { type: 'string' } } } } }],
+    }));
+    expect(result).toContain('Returns (200): array of { id: string, status: string }');
+  });
+
+  it('shows bare "array" when no items schema', () => {
+    const result = formatEndpointForSearch(makeEndpoint({
+      responses: [{ statusCode: '200', schema: { type: 'array' } }],
+    }));
+    expect(result).toContain('Returns (200): array');
+  });
+
+  it('omits Returns line when responses is empty', () => {
+    const result = formatEndpointForSearch(makeEndpoint({ responses: [] }));
+    expect(result).not.toContain('Returns');
+  });
+
+  it('omits Returns line when response schema has no properties or type', () => {
+    const result = formatEndpointForSearch(makeEndpoint({
+      responses: [{ statusCode: '200', schema: { description: 'ok' } }],
+    }));
+    expect(result).not.toContain('Returns');
+  });
+
+  it('caps Returns properties at 8 fields', () => {
+    const properties = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`f${i}`, { type: 'string' }]));
+    const result = formatEndpointForSearch(makeEndpoint({
+      responses: [{ statusCode: '200', schema: { type: 'object', properties } }],
+    }));
+    expect(result).toContain('f0: string');
+    expect(result).not.toContain('f8: string');
+  });
 });

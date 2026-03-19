@@ -37,6 +37,23 @@ export function formatEndpointForSearch(ep: Endpoint): string {
     lines.push(`  Body: ${ep.requestBody.required ? 'required' : 'optional'} (${ep.requestBody.contentType})${fields}`);
   }
 
+  for (const resp of ep.responses) {
+    const s = resp.schema as { type?: string; properties?: Record<string, { type?: string }>; items?: { properties?: Record<string, { type?: string }> } } | undefined;
+    if (!s) continue;
+    if (s.properties) {
+      const fields = Object.entries(s.properties).slice(0, 8).map(([k, v]) => `${k}: ${v.type ?? 'any'}`).join(', ');
+      lines.push(`  Returns (${resp.statusCode}): { ${fields} }`);
+    } else if (s.type === 'array') {
+      const itemProps = s.items?.properties;
+      if (itemProps) {
+        const fields = Object.entries(itemProps).slice(0, 6).map(([k, v]) => `${k}: ${v.type ?? 'any'}`).join(', ');
+        lines.push(`  Returns (${resp.statusCode}): array of { ${fields} }`);
+      } else {
+        lines.push(`  Returns (${resp.statusCode}): array`);
+      }
+    }
+  }
+
   if (ep.tags.length) lines.push(`  Tags: ${ep.tags.join(', ')}`);
 
   return lines.join('\n');

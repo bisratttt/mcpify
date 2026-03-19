@@ -135,9 +135,27 @@ describe('generateServerTs — auth', () => {
     expect(src).toContain('MYAPI_APIKEY');
   });
 
-  it('skips auth section when no schemes', () => {
+  it('shows no authentication comment when no schemes', () => {
     const src = generateServerTs(minimalSpec, [], 'openai', 'text-embedding-3-small');
     expect(src).toContain('No authentication required');
+    // _AUTH is still declared (empty) so call_api doesn't reference an undefined variable
+    expect(src).toContain('const _AUTH');
+  });
+
+  it('auth headers are injected after ...extraHeaders so they cannot be overwritten', () => {
+    const src = generateServerTs(minimalSpec, [bearerScheme], 'openai', 'text-embedding-3-small');
+    const extraHeadersIdx = src.indexOf('...extraHeaders');
+    const authHeadersIdx = src.indexOf('..._authHeaders');
+    expect(extraHeadersIdx).toBeGreaterThan(0);
+    expect(authHeadersIdx).toBeGreaterThan(extraHeadersIdx);
+  });
+
+  it('auth headers are injected after ...extraHeaders for apiKey schemes too', () => {
+    const src = generateServerTs(minimalSpec, [apiKeyScheme], 'openai', 'text-embedding-3-small');
+    const extraHeadersIdx = src.indexOf('...extraHeaders');
+    const authHeadersIdx = src.indexOf('..._authHeaders');
+    expect(extraHeadersIdx).toBeGreaterThan(0);
+    expect(authHeadersIdx).toBeGreaterThan(extraHeadersIdx);
   });
 });
 
@@ -222,6 +240,42 @@ describe('generatePackageJson', () => {
   it('requires node >= 22.5.0', () => {
     const pkg = JSON.parse(generatePackageJson('API', '1.0.0', 'openai'));
     expect(pkg.engines.node).toContain('22');
+  });
+});
+
+describe('generateServerTs — response schema in search_docs', () => {
+  it('search_docs output includes Returns line logic', () => {
+    const src = generateServerTs(minimalSpec, [], 'openai', 'text-embedding-3-small');
+    expect(src).toContain('Returns (');
+    expect(src).toContain('returnsLines');
+  });
+});
+
+describe('generateServerTs — api-workflows resource', () => {
+  it('embeds workflows markdown as WORKFLOWS_MD constant', () => {
+    const src = generateServerTs(minimalSpec, [], 'openai', 'text-embedding-3-small', '# Workflows\n\nSome content');
+    expect(src).toContain('WORKFLOWS_MD');
+    expect(src).toContain('Some content');
+  });
+
+  it('registers api-workflows resource with correct URI', () => {
+    const src = generateServerTs(minimalSpec, [], 'openai', 'text-embedding-3-small');
+    expect(src).toContain("'api-workflows'");
+    expect(src).toContain('workflows://guide');
+    expect(src).toContain('text/markdown');
+  });
+
+  it('resource is registered before server.connect', () => {
+    const src = generateServerTs(minimalSpec, [], 'openai', 'text-embedding-3-small');
+    const resourceIdx = src.indexOf('api-workflows');
+    const connectIdx = src.indexOf('server.connect(');
+    expect(resourceIdx).toBeGreaterThan(0);
+    expect(resourceIdx).toBeLessThan(connectIdx);
+  });
+
+  it('uses empty string default when workflowsMd is omitted', () => {
+    const src = generateServerTs(minimalSpec, [], 'openai', 'text-embedding-3-small');
+    expect(src).toContain('WORKFLOWS_MD = ""');
   });
 });
 

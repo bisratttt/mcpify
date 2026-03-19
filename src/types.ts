@@ -64,6 +64,7 @@ export interface AuthScheme {
   type: 'apiKey' | 'http' | 'oauth2' | 'openIdConnect';
   in?: 'header' | 'query' | 'cookie';
   scheme?: string; // 'bearer', 'basic', etc.
+  headerName?: string; // apiKey only: the actual HTTP header/query param name (e.g. 'X-API-Key')
   description?: string;
   envVar: string;
 }

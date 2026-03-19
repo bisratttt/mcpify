@@ -3,43 +3,76 @@ import type { NormalizedSpec, Endpoint, EmbedConfig, SafetyLevel } from '../type
 import { embed, buildEndpointText } from './embed.js';
 
 /**
- * Extract only safe, non-circular scalar values from a parameter schema.
- * Dereferenced specs can produce circular object references that crash JSON.stringify,
- * but leaf values like `type`, `format`, and `enum` are always primitives — safe to keep.
+ * Safely simplify a JSON Schema for SQLite storage, preserving as much type information
+ * as possible while breaking circular references that swagger-parser's dereference() can
+ * introduce. Uses ancestor-path tracking (backtracking Set) so sibling properties that
+ * share the same schema object are NOT incorrectly dropped as cycles — only true ancestors
+ * in the current recursion path are treated as cycles.
  */
-function simplifyParamSchema(schema: unknown): { type?: string; format?: string; enum?: unknown[] } | undefined {
+function simplifySchema(schema: unknown, depth = 0, path = new Set<object>()): Record<string, unknown> | undefined {
   if (!schema || typeof schema !== 'object') return undefined;
-  const s = schema as Record<string, unknown>;
-  const out: { type?: string; format?: string; enum?: unknown[] } = {};
-  if (typeof s['type'] === 'string') out.type = s['type'];
-  if (typeof s['format'] === 'string') out.format = s['format'];
-  if (Array.isArray(s['enum'])) out.enum = s['enum'] as unknown[];
-  return Object.keys(out).length ? out : undefined;
-}
+  if (depth > 5) return undefined;
+  if (path.has(schema as object)) return undefined;
+  path.add(schema as object);
 
-/**
- * Extract only the top-level property names and their primitive types from a body schema.
- * We only go one level deep so we never traverse circular references introduced by dereference().
- */
-function simplifyBodySchema(schema: unknown): { properties?: Record<string, { type?: string }> } | undefined {
-  if (!schema || typeof schema !== 'object') return undefined;
   const s = schema as Record<string, unknown>;
-  if (!s['properties'] || typeof s['properties'] !== 'object') return undefined;
-  const props = s['properties'] as Record<string, unknown>;
-  const simplified: Record<string, { type?: string }> = {};
-  for (const [k, v] of Object.entries(props)) {
-    if (v && typeof v === 'object') {
-      const pSchema = v as Record<string, unknown>;
-      simplified[k] = typeof pSchema['type'] === 'string' ? { type: pSchema['type'] } : {};
+  const out: Record<string, unknown> = {};
+
+  if (typeof s['type'] === 'string') out['type'] = s['type'];
+  if (typeof s['format'] === 'string') out['format'] = s['format'];
+  if (Array.isArray(s['enum'])) out['enum'] = s['enum'];
+  if (typeof s['description'] === 'string') out['description'] = s['description'];
+  if (s['default'] !== undefined && typeof s['default'] !== 'object') out['default'] = s['default'];
+  if (typeof s['minimum'] === 'number') out['minimum'] = s['minimum'];
+  if (typeof s['maximum'] === 'number') out['maximum'] = s['maximum'];
+  if (typeof s['minLength'] === 'number') out['minLength'] = s['minLength'];
+  if (typeof s['maxLength'] === 'number') out['maxLength'] = s['maxLength'];
+  if (typeof s['pattern'] === 'string') out['pattern'] = s['pattern'];
+  if (Array.isArray(s['required'])) out['required'] = s['required'];
+
+  // Array items
+  if (s['items'] && typeof s['items'] === 'object') {
+    const items = simplifySchema(s['items'], depth + 1, path);
+    if (items) out['items'] = items;
+  }
+
+  // Object properties
+  if (s['properties'] && typeof s['properties'] === 'object') {
+    const props = s['properties'] as Record<string, unknown>;
+    const simplified: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(props)) {
+      const prop = simplifySchema(v, depth + 1, path);
+      if (prop) simplified[k] = prop;
+    }
+    if (Object.keys(simplified).length) out['properties'] = simplified;
+  }
+
+  // additionalProperties — Stripe/Twilio metadata fields (Record<string, string>)
+  if (s['additionalProperties'] === true || s['additionalProperties'] === false) {
+    out['additionalProperties'] = s['additionalProperties'];
+  } else if (s['additionalProperties'] && typeof s['additionalProperties'] === 'object') {
+    const ap = simplifySchema(s['additionalProperties'], depth + 1, path);
+    if (ap) out['additionalProperties'] = ap;
+  }
+
+  // Polymorphic schemas — oneOf / anyOf / allOf
+  for (const kw of ['oneOf', 'anyOf', 'allOf'] as const) {
+    if (Array.isArray(s[kw])) {
+      const variants = (s[kw] as unknown[])
+        .map(v => simplifySchema(v, depth + 1, path))
+        .filter(Boolean);
+      if (variants.length) out[kw] = variants;
     }
   }
-  return Object.keys(simplified).length ? { properties: simplified } : undefined;
+
+  path.delete(schema as object); // backtrack so siblings can reuse this node
+  return Object.keys(out).length ? out : undefined;
 }
 
 /**
  * Classify an endpoint's safety level based on HTTP method and text heuristics.
  *
- * Priority: billable > destructive > write > read
+ * Priority: destructive > billable > write > read
  *
  * BILLABLE — mutating calls that cost money or trigger external side effects
  *   (charges, payments, invoices, SMS/email sends). Errs on the side of caution.
@@ -89,16 +122,23 @@ function sanitizeEndpoint(ep: Endpoint): Endpoint {
       in: p.in,
       required: p.required,
       description: p.description,
-      schema: simplifyParamSchema(p.schema),
+      schema: simplifySchema(p.schema),
     })),
     requestBody: ep.requestBody
       ? {
           required: ep.requestBody.required,
           contentType: ep.requestBody.contentType,
-          schema: simplifyBodySchema(ep.requestBody.schema),
+          schema: simplifySchema(ep.requestBody.schema),
         }
       : undefined,
-    responses: [],
+    responses: ep.responses
+      .filter(r => r.statusCode.startsWith('2'))
+      .slice(0, 2)
+      .map(r => ({
+        statusCode: r.statusCode,
+        description: r.description,
+        schema: simplifySchema(r.schema),
+      })),
   };
 }
 
@@ -163,17 +203,27 @@ export class ApiIndexer {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
+    // Embed all endpoints (async, must happen outside the transaction)
+    const rows: Parameters<typeof insertEndpoint.run>[] = [];
     for (const ep of spec.endpoints) {
       const text = buildEndpointText(ep);
       const { embedding } = await embed(text, embedConfig);
-      const embeddingBuf = float32ToBuffer(embedding);
-
-      insertEndpoint.run(
+      rows.push([
         ep.id, ep.method, ep.path,
         ep.summary ?? null, ep.description ?? null,
         JSON.stringify(ep.tags), JSON.stringify(sanitizeEndpoint(ep)),
-        embeddingBuf,
-      );
+        float32ToBuffer(embedding),
+      ]);
+    }
+
+    // Bulk insert in a single transaction (~100x faster than one-by-one)
+    this.db.exec('BEGIN');
+    try {
+      for (const args of rows) insertEndpoint.run(...args);
+      this.db.exec('COMMIT');
+    } catch (e) {
+      this.db.exec('ROLLBACK');
+      throw e;
     }
   }
 

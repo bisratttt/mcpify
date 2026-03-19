@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   extractRequiredEnvVars,
-  buildAuthHeaders,
-  buildAuthQueryParams,
   buildDotEnvExample,
 } from '../../src/generator/auth.js';
 import type { AuthScheme, Endpoint } from '../../src/types.js';
@@ -95,49 +93,6 @@ describe('extractRequiredEnvVars', () => {
   it('generates correct description for oauth2', () => {
     const vars = extractRequiredEnvVars([oauth2Scheme], [endpoint()]);
     expect(vars[0].description).toMatch(/OAuth2/i);
-  });
-});
-
-describe('buildAuthHeaders', () => {
-  it('returns empty object literal for no auth', () => {
-    expect(buildAuthHeaders([])).toBe('{}');
-  });
-
-  it('includes Authorization Bearer for http bearer scheme', () => {
-    const headers = buildAuthHeaders([bearerScheme]);
-    expect(headers).toContain('Authorization');
-    expect(headers).toContain('Bearer');
-    expect(headers).toContain('MYAPI_BEARERAUTH');
-  });
-
-  it('includes Authorization Basic for http basic scheme', () => {
-    const headers = buildAuthHeaders([basicScheme]);
-    expect(headers).toContain('Authorization');
-    expect(headers).toContain('Basic');
-  });
-
-  it('includes custom header name for apiKey in header', () => {
-    const headers = buildAuthHeaders([apiKeyHeaderScheme]);
-    expect(headers).toContain('apiKey');
-    expect(headers).toContain('MYAPI_APIKEY');
-  });
-
-  it('does not include query-based apiKey in headers', () => {
-    const headers = buildAuthHeaders([apiKeyQueryScheme]);
-    // query keys are handled separately
-    expect(headers).not.toContain('queryKey');
-  });
-});
-
-describe('buildAuthQueryParams', () => {
-  it('returns empty string when no query-based auth', () => {
-    expect(buildAuthQueryParams([bearerScheme])).toBe('');
-  });
-
-  it('generates params.set for apiKey in query', () => {
-    const code = buildAuthQueryParams([apiKeyQueryScheme]);
-    expect(code).toContain("'queryKey'");
-    expect(code).toContain('MYAPI_QUERYKEY');
   });
 });
 

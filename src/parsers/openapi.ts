@@ -115,7 +115,7 @@ function normalizeV3Auth(api: OpenAPIV3.Document, title: string): AuthScheme[] {
   return Object.entries(schemes).map(([name, scheme]) => {
     const s = scheme as OpenAPIV3.SecuritySchemeObject;
     if (s.type === 'apiKey') {
-      return { name, type: 'apiKey', in: s.in as AuthScheme['in'], description: s.description, envVar: toEnvVar(title, name) };
+      return { name, type: 'apiKey', in: s.in as AuthScheme['in'], headerName: s.name, description: s.description, envVar: toEnvVar(title, name) };
     }
     if (s.type === 'http') {
       return { name, type: 'http', scheme: s.scheme, description: s.description, envVar: toEnvVar(title, name) };
@@ -190,7 +190,7 @@ function normalizeV2Auth(api: V2Doc): AuthScheme[] {
   const defs = api.securityDefinitions ?? {};
   return Object.entries(defs).map(([name, def]) => {
     if (def.type === 'apiKey') {
-      return { name, type: 'apiKey', in: def.in as AuthScheme['in'], description: def.description, envVar: toEnvVar(api.info.title, name) };
+      return { name, type: 'apiKey', in: def.in as AuthScheme['in'], headerName: def.name, description: def.description, envVar: toEnvVar(api.info.title, name) };
     }
     if (def.type === 'basic') {
       return { name, type: 'http', scheme: 'basic', description: def.description, envVar: toEnvVar(api.info.title, name) };

@@ -183,6 +183,7 @@ my-api-mcp/
 ├── db/
 │   └── api.sqlite       # Pre-built semantic search index
 ├── .env.example         # Required auth credentials
+├── WORKFLOWS.md         # Detected CRUD / paginated-list / search-act patterns
 ├── package.json
 ├── tsconfig.json
 └── README.md
